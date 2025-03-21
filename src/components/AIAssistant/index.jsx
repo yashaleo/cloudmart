@@ -1,22 +1,47 @@
 import React, { useState, useEffect, useRef } from "react";
+import {
+  IconButton,
+  Box,
+  Paper,
+  TextField,
+  CircularProgress,
+  Typography,
+} from "@mui/material";
 import { MessageCircle, X, Send } from "lucide-react";
 import api from "../../config/axiosConfig";
 
 const TypingIndicator = () => (
-  <div className="inline-flex items-center space-x-1 bg-gray-200 rounded-lg px-3 py-3">
-    <div
-      className="w-2 h-2 bg-gray-600 rounded-full animate-bounce"
-      style={{ animationDelay: "0ms" }}
-    ></div>
-    <div
-      className="w-2 h-2 bg-gray-600 rounded-full animate-bounce"
-      style={{ animationDelay: "150ms" }}
-    ></div>
-    <div
-      className="w-2 h-2 bg-gray-600 rounded-full animate-bounce"
-      style={{ animationDelay: "300ms" }}
-    ></div>
-  </div>
+  <Box
+    display="flex"
+    alignItems="center"
+    gap={1}
+    bgcolor="grey.300"
+    px={2}
+    py={1}
+    borderRadius={2}
+  >
+    <Box
+      width={8}
+      height={8}
+      bgcolor="grey.600"
+      borderRadius="50%"
+      sx={{ animation: "bounce 1.5s infinite" }}
+    />
+    <Box
+      width={8}
+      height={8}
+      bgcolor="grey.600"
+      borderRadius="50%"
+      sx={{ animation: "bounce 1.5s infinite", animationDelay: "0.15s" }}
+    />
+    <Box
+      width={8}
+      height={8}
+      bgcolor="grey.600"
+      borderRadius="50%"
+      sx={{ animation: "bounce 1.5s infinite", animationDelay: "0.3s" }}
+    />
+  </Box>
 );
 
 const AIAssistant = () => {
@@ -35,7 +60,7 @@ const AIAssistant = () => {
   }, [isOpen]);
 
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
   const startNewConversation = async () => {
@@ -48,136 +73,149 @@ const AIAssistant = () => {
   };
 
   const handleSendMessage = async () => {
-    if (inputMessage.trim() === "" || !conversationId || isLoading) return;
+    if (!inputMessage.trim() || !conversationId || isLoading) return;
 
-    const newMessage = { text: inputMessage, sender: "user" };
-    setMessages((prevMessages) => [...prevMessages, newMessage]);
+    setMessages((prev) => [...prev, { text: inputMessage, sender: "user" }]);
     setInputMessage("");
     setIsLoading(true);
     setIsTyping(true);
 
     try {
       const response = await api.post("/ai/bedrock/message", {
-        conversationId: conversationId,
+        conversationId,
         message: inputMessage,
       });
-
       setIsTyping(false);
-
-      // Extract the response text from the options object
-      let aiResponseText = "";
-      if (
-        typeof response.data.response === "object" &&
-        response.data.response.options
-      ) {
-        aiResponseText = response.data.response.options.output;
-      } else if (typeof response.data.response === "string") {
-        aiResponseText = response.data.response;
-      } else {
-        aiResponseText = "Sorry, I couldn't process that response.";
-      }
-
-      const aiResponse = { text: aiResponseText, sender: "ai" };
-      setMessages((prevMessages) => [...prevMessages, aiResponse]);
+      const aiResponseText =
+        response.data.response?.options?.output ||
+        response.data.response ||
+        "Sorry, I couldn't process that response.";
+      setMessages((prev) => [...prev, { text: aiResponseText, sender: "ai" }]);
     } catch (error) {
       console.error("Error sending message:", error);
       setIsTyping(false);
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          text: "Sorry, there was an error processing your request.",
-          sender: "ai",
-        },
+      setMessages((prev) => [
+        ...prev,
+        { text: "Error processing request.", sender: "ai" },
       ]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
   return (
     <>
       {!isOpen && (
-        <div
-          className="fixed bottom-4 right-4 bg-blue-600 text-white p-3 rounded-full shadow-lg cursor-pointer hover:bg-blue-700 transition-colors"
+        <IconButton
           onClick={() => setIsOpen(true)}
+          sx={{
+            position: "fixed",
+            bottom: 16,
+            right: 16,
+            bgcolor: "primary.main",
+            color: "white",
+            ":hover": { bgcolor: "primary.dark" },
+          }}
         >
-          <MessageCircle className="h-6 w-6" />
-        </div>
+          <MessageCircle size={24} />
+        </IconButton>
       )}
       {isOpen && (
-        <div
-          className="fixed bottom-4 right-4 w-96 bg-white rounded-lg shadow-xl flex flex-col overflow-hidden"
-          style={{ height: "600px" }}
+        <Paper
+          elevation={4}
+          sx={{
+            position: "fixed",
+            bottom: 16,
+            right: 16,
+            width: 380,
+            height: 600,
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            fontFamily: "'Inter', sans-serif", // Updated font for a modern professional look
+          }}
         >
-          <div className="bg-blue-600 text-white p-4 flex justify-between items-center">
-            <h3 className="font-semibold">AI Assistant</h3>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="text-white hover:text-gray-200"
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            bgcolor="primary.main"
+            color="white"
+            p={2}
+          >
+            <Typography
+              variant="h6"
+              sx={{ fontFamily: "'Playfair Display', serif", fontWeight: 600 }}
             >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-          <div className="flex-grow overflow-y-auto p-4">
-            {messages.map((message, index) => (
-              <div
+              AI Assistant
+            </Typography>
+            <IconButton
+              onClick={() => setIsOpen(false)}
+              sx={{ color: "white" }}
+            >
+              <X size={20} />
+            </IconButton>
+          </Box>
+          <Box flexGrow={1} p={2} overflow="auto" sx={{ bgcolor: "grey.100" }}>
+            {messages.map((msg, index) => (
+              <Box
                 key={index}
-                className={`mb-4 ${
-                  message.sender === "user" ? "text-right" : "text-left"
-                }`}
+                display="flex"
+                justifyContent={
+                  msg.sender === "user" ? "flex-end" : "flex-start"
+                }
+                mb={1}
               >
-                <div
-                  className={`inline-block p-3 rounded-lg ${
-                    message.sender === "user"
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-200 text-gray-800"
-                  }`}
+                <Box
+                  sx={{
+                    bgcolor:
+                      msg.sender === "user" ? "primary.main" : "grey.300",
+                    color: msg.sender === "user" ? "white" : "black",
+                    px: 2,
+                    py: 1,
+                    borderRadius: 2,
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: "0.95rem",
+                  }}
                 >
-                  {message.text}
-                </div>
-              </div>
+                  {msg.text}
+                </Box>
+              </Box>
             ))}
-            {isTyping && (
-              <div className="text-left mb-4">
-                <TypingIndicator />
-              </div>
-            )}
+            {isTyping && <TypingIndicator />}
             <div ref={messagesEndRef} />
-          </div>
-          <div className="border-t p-4 flex">
-            <input
-              type="text"
+          </Box>
+          <Box display="flex" p={2} borderTop={1} borderColor="grey.300">
+            <TextField
+              fullWidth
+              variant="outlined"
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Type your message..."
-              className="flex-grow border border-gray-300 rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
+              placeholder="Type a message..."
+              onKeyPress={(e) =>
+                e.key === "Enter" && !e.shiftKey && handleSendMessage()
+              }
               disabled={isLoading}
+              sx={{ fontFamily: "'Inter', sans-serif" }}
             />
-            <button
+            <IconButton
               onClick={handleSendMessage}
-              className="bg-blue-600 text-white px-4 py-2 rounded-r-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400"
               disabled={isLoading}
+              sx={{
+                bgcolor: "primary.main",
+                color: "white",
+                ml: 1,
+                ":hover": { bgcolor: "primary.dark" },
+              }}
             >
               {isLoading ? (
-                <div className="w-6 h-6 border-t-2 border-white border-solid rounded-full animate-spin"></div>
+                <CircularProgress size={24} color="inherit" />
               ) : (
-                <Send className="h-6 w-6" />
+                <Send size={24} />
               )}
-            </button>
-          </div>
-        </div>
+            </IconButton>
+          </Box>
+        </Paper>
       )}
     </>
   );

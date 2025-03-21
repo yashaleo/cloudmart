@@ -1,6 +1,6 @@
 // utils/userUtils.js
 
-const USER_KEY = 'cloudmart_user';
+const USER_KEY = "cloudmart_user";
 
 export const initializeUser = () => {
   const existingUser = localStorage.getItem(USER_KEY);
@@ -8,9 +8,9 @@ export const initializeUser = () => {
     const randomNumber = Math.floor(Math.random() * 10000);
     const newUser = {
       email: `user@example.com`,
-      firstName: 'Anonymous',
+      firstName: "Anonymous",
       lastName: `User${randomNumber}`,
-      phone: ''
+      phone: "",
     };
     localStorage.setItem(USER_KEY, JSON.stringify(newUser));
     return newUser;

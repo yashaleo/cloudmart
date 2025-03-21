@@ -1,54 +1,118 @@
 import React, { useState, useEffect } from "react";
-import { Search, MessageCircle } from "lucide-react";
-import Header from "../Header";
-import Footer from "../Footer";
+import PropTypes from "prop-types";
+import { Search } from "lucide-react";
+import {
+  Container,
+  Typography,
+  TextField,
+  Grid,
+  Card,
+  CardMedia,
+  CardContent,
+  CardActions,
+  Button,
+  CircularProgress,
+  Alert,
+  Paper,
+  InputAdornment,
+} from "@mui/material";
 import LoadingSpinner from "../LoadingSpinner";
 import { addToCart } from "../../utils/cartUtils";
 import api from "../../config/axiosConfig";
 import AIAssistant from "../AIAssistant";
 
 const ProductCard = ({ product, onAddToCart }) => {
-  const truncatedTitle =
-    product.name.length > 60 ? product.name.slice(0, 60) + "..." : product.name;
-
-  const truncatedDescription =
-    product.description.length > 195
-      ? product.description.slice(0, 195) + "..."
-      : product.description;
-
   return (
-    <div className="bg-white p-4 rounded-lg shadow-md flex flex-col justify-between h-full">
-      <div>
-        <img
-          src={product.image}
-          alt={product.name}
-          className="w-full h-48 object-contain mb-4"
-        />
-        <h3
-          className="text-lg font-semibold overflow-hidden"
-          title={product.name}
-        >
-          {truncatedTitle}
-        </h3>
+    <Card
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        boxShadow: 3,
+        transition: "transform 0.3s ease",
+        "&:hover": { transform: "scale(1.03)" },
+        borderRadius: 2,
+      }}
+    >
+      <CardMedia
+        component="img"
+        image={product.image}
+        alt={product.name}
+        sx={{
+          width: "100%",
+          height: "auto",
+          aspectRatio: "4 / 3",
+          objectFit: "cover",
+        }}
+      />
 
-        <h3
-          className="text-md overflow-hidden mb-2"
-          title={product.description}
+      <CardContent
+        sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}
+      >
+        <Typography variant="h6" title={product.name} gutterBottom noWrap>
+          {product.name}
+        </Typography>
+        <Typography
+          variant="body2"
+          color="textSecondary"
+          sx={{
+            flexGrow: 1,
+            display: "-webkit-box",
+            WebkitBoxOrient: "vertical",
+            WebkitLineClamp: 3,
+            overflow: "hidden",
+          }}
         >
-          {truncatedDescription}
-        </h3>
-      </div>
-      <div>
-        <p className="text-gray-600">${product.price.toFixed(2)}</p>
-        <button
+          {product.description}
+        </Typography>
+      </CardContent>
+
+      <CardActions
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "12px 16px",
+          mt: "auto",
+          pb: 2,
+          flexWrap: "nowrap",
+          minHeight: "56px",
+        }}
+      >
+        <Typography variant="h6" sx={{ whiteSpace: "nowrap", flexShrink: 0 }}>
+          ${product.price.toFixed(2)}
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
           onClick={() => onAddToCart(product)}
-          className="mt-2 bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors w-full"
+          sx={{
+            borderRadius: 2,
+            padding: "6px 10px",
+            minWidth: "80px",
+            maxWidth: "fit-content",
+            boxShadow: 1,
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+          }}
         >
           Add to Cart
-        </button>
-      </div>
-    </div>
+        </Button>
+      </CardActions>
+    </Card>
   );
+};
+
+// ✅ Adding PropTypes for ProductCard
+ProductCard.propTypes = {
+  product: PropTypes.shape({
+    id: PropTypes.number.isRequired,
+    name: PropTypes.string.isRequired,
+    image: PropTypes.string.isRequired,
+    description: PropTypes.string.isRequired,
+    price: PropTypes.number.isRequired,
+  }).isRequired,
+  onAddToCart: PropTypes.func.isRequired,
 };
 
 const CloudMartMainPage = () => {
@@ -68,13 +132,11 @@ const CloudMartMainPage = () => {
         setLoading(false);
       }
     };
-
     fetchProducts();
   }, []);
 
   const handleAddToCart = (product) => {
     addToCart(product);
-    // You might want to update the cart count in the header here
   };
 
   const handleSearch = (e) => {
@@ -82,50 +144,82 @@ const CloudMartMainPage = () => {
   };
 
   const filteredProducts = products.filter((product) =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase())
+    product.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      <Header />
-      <main className="container mx-auto py-8 flex-grow px-4">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">Featured Products</h2>
-          <div className="relative">
-            <input
-              type="text"
+    <Container
+      sx={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}
+    >
+      <main style={{ flexGrow: 1, padding: "2rem 0", width: "100%" }}>
+        <Container maxWidth="x1">
+          <Paper
+            sx={{
+              padding: 2,
+              marginBottom: 3,
+              display: "flex",
+              alignItems: "center",
+              width: "100%",
+              maxWidth: "1200px",
+              marginX: "auto",
+            }}
+            elevation={3}
+          >
+            <Typography variant="h4" sx={{ flexGrow: 1 }}>
+              Featured Products
+            </Typography>
+            <TextField
+              variant="outlined"
               placeholder="Search products..."
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               value={searchTerm}
               onChange={handleSearch}
+              sx={{ width: "100%", maxWidth: "400px" }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search size={20} />
+                  </InputAdornment>
+                ),
+              }}
             />
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-          </div>
-        </div>
+          </Paper>
 
-        {loading ? (
-          <LoadingSpinner />
-        ) : error ? (
-          <p className="text-center text-red-500 mt-6">{error}</p>
-        ) : filteredProducts.length === 0 ? (
-          <p className="text-center text-gray-500 mt-6">
-            No products found matching your search.
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {filteredProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onAddToCart={handleAddToCart}
-              />
-            ))}
-          </div>
-        )}
+          {loading ? (
+            <CircularProgress sx={{ display: "block", margin: "auto" }} />
+          ) : error ? (
+            <Alert severity="error">{error}</Alert>
+          ) : filteredProducts.length === 0 ? (
+            <Typography textAlign="center" color="textSecondary">
+              No products found matching your search.
+            </Typography>
+          ) : (
+            <Grid
+              container
+              spacing={4}
+              sx={{ justifyContent: "center", flexWrap: "wrap" }}
+            >
+              {filteredProducts.map((product) => (
+                <Grid
+                  item
+                  key={product.id}
+                  xs={12}
+                  sm={6}
+                  md={4}
+                  lg={3}
+                  sx={{ minWidth: "250px" }}
+                >
+                  <ProductCard
+                    product={product}
+                    onAddToCart={handleAddToCart}
+                  />
+                </Grid>
+              ))}
+            </Grid>
+          )}
+        </Container>
       </main>
-      <Footer />
       <AIAssistant />
-    </div>
+    </Container>
   );
 };
 

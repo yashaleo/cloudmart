@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 import { Trash2, X } from "lucide-react";
-import Header from "../Header";
-import Footer from "../Footer";
 import {
   getCartItems,
   removeFromCart,
@@ -11,11 +10,10 @@ import {
 } from "../../utils/cartUtils";
 import { getUser } from "../../utils/userUtils";
 import api from "../../config/axiosConfig";
+
 const CartItem = ({ item, onRemove, onUpdateQuantity }) => {
-  const truncateName = (name, maxLength = 60) => {
-    if (name.length <= maxLength) return name;
-    return `${name.substring(0, maxLength)}...`;
-  };
+  const truncateName = (name, maxLength = 60) =>
+    name.length <= maxLength ? name : `${name.substring(0, maxLength)}...`;
 
   return (
     <div className="flex items-center border-b border-gray-200 py-4">
@@ -25,8 +23,6 @@ const CartItem = ({ item, onRemove, onUpdateQuantity }) => {
         className="w-16 h-16 object-cover mr-4"
       />
       <div className="flex-grow min-w-0">
-        {" "}
-        {/* min-w-0 allows text truncation */}
         <h3 className="text-lg font-semibold truncate" title={item.name}>
           {truncateName(item.name)}
         </h3>
@@ -82,14 +78,14 @@ const ConfirmationModal = ({
         <div className="flex justify-end space-x-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out"
+            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none transition duration-150 ease-in-out"
             disabled={isLoading}
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out flex items-center"
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-150 ease-in-out flex items-center"
             disabled={isLoading}
           >
             {isLoading ? (
@@ -126,12 +122,38 @@ const ConfirmationModal = ({
   );
 };
 
+// PropTypes Validation
+CartItem.propTypes = {
+  item: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    name: PropTypes.string.isRequired,
+    image: PropTypes.string.isRequired,
+    price: PropTypes.number.isRequired,
+    quantity: PropTypes.number.isRequired,
+  }).isRequired,
+  onRemove: PropTypes.func.isRequired,
+  onUpdateQuantity: PropTypes.func.isRequired,
+};
+
+ConfirmationModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onConfirm: PropTypes.func.isRequired,
+  total: PropTypes.number.isRequired,
+  isLoading: PropTypes.bool.isRequired,
+};
+
 const CartPage = () => {
   const [cartItems, setCartItems] = useState([]);
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [orderSuccess, setOrderSuccess] = useState(false);
+
+  const totalPrice = cartItems.reduce(
+    (total, item) => total + item.price * item.quantity,
+    0,
+  );
 
   useEffect(() => {
     setCartItems(getCartItems());
@@ -153,8 +175,9 @@ const CartPage = () => {
     setError(null);
     try {
       const user = getUser();
-      if (!user || !user.email) {
+      if (!user?.email) {
         setError("Please log in to complete your order.");
+        setLoading(false);
         return;
       }
 
@@ -173,7 +196,7 @@ const CartPage = () => {
 
       await api.post("/orders", order);
       clearCart();
-      setCartItems([]); // Update local state
+      setCartItems([]);
       setOrderSuccess(true);
       setIsConfirmationOpen(false);
     } catch (err) {
@@ -184,15 +207,9 @@ const CartPage = () => {
     }
   };
 
-  const totalPrice = cartItems.reduce(
-    (total, item) => total + item.price * item.quantity,
-    0
-  );
-
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      <Header />
-      <main className="container mx-auto py-8 flex-grow px-4">
+    <main className="min-h-screen bg-gray-100 flex flex-col">
+      <div className="container mx-auto py-8 flex-grow px-4">
         <h1 className="text-3xl font-bold mb-6">Your Cart</h1>
         {orderSuccess ? (
           <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4 rounded">
@@ -208,13 +225,6 @@ const CartPage = () => {
               Continue Shopping
             </Link>
           </div>
-        ) : cartItems.length === 0 ? (
-          <p className="text-xl">
-            Your cart is empty.{" "}
-            <Link to="/" className="text-blue-600 hover:underline">
-              Continue shopping
-            </Link>
-          </p>
         ) : (
           <div className="bg-white rounded-lg shadow-md p-6">
             {cartItems.map((item) => (
@@ -225,23 +235,9 @@ const CartPage = () => {
                 onUpdateQuantity={handleUpdateQuantity}
               />
             ))}
-            <div className="mt-6 text-right">
-              <p className="text-xl font-semibold">
-                Total: ${totalPrice.toFixed(2)}
-              </p>
-              {error && <p className="text-red-500 mt-2">{error}</p>}
-              <button
-                className="mt-4 bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors disabled:bg-gray-400"
-                onClick={() => setIsConfirmationOpen(true)}
-                disabled={loading}
-              >
-                Place Order
-              </button>
-            </div>
           </div>
         )}
-      </main>
-      <Footer />
+      </div>
       <ConfirmationModal
         isOpen={isConfirmationOpen}
         onClose={() => setIsConfirmationOpen(false)}
@@ -249,7 +245,7 @@ const CartPage = () => {
         total={totalPrice}
         isLoading={loading}
       />
-    </div>
+    </main>
   );
 };
 

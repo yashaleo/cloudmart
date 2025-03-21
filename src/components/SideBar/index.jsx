@@ -1,52 +1,79 @@
-
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { X } from 'lucide-react';
+import React from "react";
+import PropTypes from "prop-types";
+import { Link } from "react-router-dom";
+import {
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  IconButton,
+  Typography,
+  Box,
+} from "@mui/material";
+import { Close as CloseIcon } from "@mui/icons-material";
 
 const SideBar = ({ isOpen, onClose }) => {
   return (
-    <div 
-      className={`fixed top-0 left-0 h-full w-64 bg-blue-700 text-white transform transition-transform duration-300 ease-in-out ${
-        isOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}
+    <Drawer
+      anchor="left"
+      open={isOpen}
+      onClose={onClose}
+      sx={{
+        "& .MuiDrawer-paper": {
+          width: 285,
+          backgroundColor: "#1E3A8A",
+          color: "white",
+        },
+      }}
     >
-      <div className="p-4">
-        <button onClick={onClose} className="absolute top-4 right-4 focus:outline-none">
-          <X className="h-6 w-6" />
-        </button>
-        <h2 className="text-2xl font-bold mb-4">Menu</h2>
-        <nav>
-          <ul className="space-y-2">
-            <li>
-              <Link to="/" className="block px-2 py-2 hover:bg-blue-600" onClick={onClose}>
-                Home
-              </Link>
-            </li>
-            <li>
-              <Link to="/cart" className="block px-2 py-2 hover:bg-blue-600" onClick={onClose}>
-                Cart
-              </Link>
-            </li>
-            <li>
-              <Link to="/my-orders" className="block px-2 py-2 hover:bg-blue-600" onClick={onClose}>
-                My Orders
-              </Link>
-            </li>
-            <li>
-              <Link to="/about" className="block px-2 py-2 hover:bg-blue-600" onClick={onClose}>
-                About Us
-              </Link>
-            </li>
-            <li>
-              <Link to="/customer-support" className="block px-2 py-2 hover:bg-blue-600" onClick={onClose}>
-                Customer Support
-              </Link>
-            </li>
-          </ul>
-        </nav>
-      </div>
-    </div>
+      <Box className="w-64 h-full bg-blue-900 text-white p-4 relative">
+        <IconButton
+          onClick={onClose}
+          sx={{ position: "absolute", top: 8, right: 8, color: "white" }}
+        >
+          <CloseIcon />
+        </IconButton>
+        <Typography variant="h6" className="font-bold mb-4">
+          Menu
+        </Typography>
+        <List>
+          {[
+            { text: "Home", path: "/" },
+            { text: "Cart", path: "/cart" },
+            { text: "My Orders", path: "/my-orders" },
+            { text: "About Us", path: "/about" },
+            { text: "Customer Support", path: "/customer-support" },
+          ].map((item) => (
+            <ListItem key={item.text} disablePadding>
+              <ListItemButton
+                component={Link}
+                to={item.path}
+                onClick={onClose}
+                sx={{
+                  color: "white",
+                  borderRadius: "8px", // Ensures the button itself has rounded corners
+                  "&:hover": {
+                    backgroundColor: "#1E40AF",
+                    borderRadius: "8px", // Rounds the hover background
+                  },
+                  mx: 1, // Adds margin so the rounding is visible
+                }}
+              >
+                <ListItemText primary={item.text} />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+      </Box>
+    </Drawer>
   );
+};
+
+// ✅ Adding PropTypes for SideBar
+SideBar.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
 };
 
 export default SideBar;

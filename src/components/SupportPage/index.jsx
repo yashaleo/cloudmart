@@ -1,25 +1,20 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Send, Plus, Trash2 } from "lucide-react";
-import Header from "../Header";
-import Footer from "../Footer";
+import { Send, Add, Delete } from "@mui/icons-material";
+import {
+  Container,
+  Box,
+  Paper,
+  Button,
+  Typography,
+  TextField,
+  IconButton,
+  CircularProgress,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+} from "@mui/material";
 import api from "../../config/axiosConfig";
-
-const TypingIndicator = () => (
-  <div className="inline-flex items-center space-x-1 bg-gray-200 rounded-lg px-3 py-3">
-    <div
-      className="w-2 h-2 bg-gray-600 rounded-full animate-bounce"
-      style={{ animationDelay: "0ms" }}
-    ></div>
-    <div
-      className="w-2 h-2 bg-gray-600 rounded-full animate-bounce"
-      style={{ animationDelay: "150ms" }}
-    ></div>
-    <div
-      className="w-2 h-2 bg-gray-600 rounded-full animate-bounce"
-      style={{ animationDelay: "300ms" }}
-    ></div>
-  </div>
-);
 
 const CustomerSupportPage = () => {
   const [threads, setThreads] = useState([]);
@@ -28,9 +23,7 @@ const CustomerSupportPage = () => {
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [endedThreads, setEndedThreads] = useState([]);
   const messagesEndRef = useRef(null);
-  const inputRef = useRef(null);
 
   useEffect(() => {
     loadThreadsFromLocalStorage();
@@ -39,6 +32,8 @@ const CustomerSupportPage = () => {
   useEffect(() => {
     if (currentThreadId) {
       loadMessagesForThread(currentThreadId);
+    } else {
+      setMessages([]); // Clear messages when no thread is selected
     }
   }, [currentThreadId]);
 
@@ -46,48 +41,43 @@ const CustomerSupportPage = () => {
     scrollToBottom();
   }, [messages, isTyping]);
 
+  // Load threads from local storage
   const loadThreadsFromLocalStorage = () => {
-    const savedThreads =
-      JSON.parse(localStorage.getItem("supportThreads")) || [];
-    setThreads(savedThreads);
-    setEndedThreads(
-      savedThreads.filter((thread) => thread.ended).map((thread) => thread.id)
-    );
-    if (savedThreads.length > 0 && !currentThreadId) {
-      const firstActiveThread = savedThreads.find((thread) => !thread.ended);
-      setCurrentThreadId(
-        firstActiveThread ? firstActiveThread.id : savedThreads[0].id
-      );
+    try {
+      const savedThreads =
+        JSON.parse(localStorage.getItem("supportThreads")) || [];
+      setThreads(savedThreads);
+      if (savedThreads.length > 0) {
+        setCurrentThreadId(savedThreads[0].id);
+      }
+    } catch (error) {
+      console.error("Error loading threads from storage:", error);
+      localStorage.removeItem("supportThreads"); // Remove corrupt data
     }
   };
 
-  const saveThreadsToLocalStorage = (updatedThreads) => {
-    localStorage.setItem("supportThreads", JSON.stringify(updatedThreads));
-  };
-
-  const loadMessagesForThread = (threadId) => {
-    const savedThreads =
-      JSON.parse(localStorage.getItem("supportThreads")) || [];
-    const thread = savedThreads.find((t) => t.id === threadId);
-    if (thread) {
-      setMessages(thread.messages || []);
-    } else {
-      setMessages([]);
+  // Fetch messages for a given thread
+  const loadMessagesForThread = async (threadId) => {
+    try {
+      const response = await api.get(`/ai/messages?threadId=${threadId}`);
+      setMessages(response.data.messages || []);
+    } catch (error) {
+      console.error("Error loading messages:", error);
+      setMessages([]); // Fallback to empty messages
     }
   };
 
+  // Create a new thread
   const createNewThread = async () => {
     try {
       const response = await api.post("/ai/start");
       const newThread = {
         id: response.data.threadId,
         name: `Thread ${threads.length + 1}`,
-        messages: [],
-        ended: false,
       };
       const updatedThreads = [newThread, ...threads];
       setThreads(updatedThreads);
-      saveThreadsToLocalStorage(updatedThreads);
+      localStorage.setItem("supportThreads", JSON.stringify(updatedThreads));
       setCurrentThreadId(newThread.id);
       setMessages([]);
     } catch (error) {
@@ -95,77 +85,27 @@ const CustomerSupportPage = () => {
     }
   };
 
+  // Delete a thread
   const deleteThread = (threadId) => {
     const updatedThreads = threads.filter((thread) => thread.id !== threadId);
     setThreads(updatedThreads);
-    saveThreadsToLocalStorage(updatedThreads);
+    localStorage.setItem("supportThreads", JSON.stringify(updatedThreads));
 
+    // Reset current thread if the deleted thread was active
     if (currentThreadId === threadId) {
-      const nextActiveThread = updatedThreads.find((thread) => !thread.ended);
-      setCurrentThreadId(nextActiveThread ? nextActiveThread.id : null);
-      setMessages(nextActiveThread ? nextActiveThread.messages : []);
-    }
-
-    setEndedThreads(endedThreads.filter((id) => id !== threadId));
-  };
-
-  const endSupport = async () => {
-    if (!currentThreadId) return;
-
-    try {
-      setIsLoading(true);
-
-      // Send the thread for sentiment analysis
-      await api.post("/ai/analyze-sentiment", {
-        thread: {
-          id: currentThreadId,
-          name:
-            threads.find((t) => t.id === currentThreadId)?.name ||
-            "Ended Thread",
-          messages: messages,
-        },
-      });
-
-      // Update local state
-      setEndedThreads([...endedThreads, currentThreadId]);
-
-      // Update threads in localStorage
-      const updatedThreads = threads.map((thread) =>
-        thread.id === currentThreadId ? { ...thread, ended: true } : thread
+      setCurrentThreadId(
+        updatedThreads.length > 0 ? updatedThreads[0].id : null,
       );
-      setThreads(updatedThreads);
-      saveThreadsToLocalStorage(updatedThreads);
-
-      // If the current thread is ended, switch to the first available active thread
-      const nextActiveThread = updatedThreads.find((t) => !t.ended);
-      if (nextActiveThread) {
-        setCurrentThreadId(nextActiveThread.id);
-        setMessages(nextActiveThread.messages || []);
-      } else {
-        setCurrentThreadId(null);
-        setMessages([]);
-      }
-    } catch (error) {
-      console.error("Error ending support:", error);
-    } finally {
-      setIsLoading(false);
+      setMessages([]);
     }
   };
 
-  const isThreadEnded = (threadId) => endedThreads.includes(threadId);
-
+  // Handle sending a message
   const handleSendMessage = async () => {
-    if (
-      inputMessage.trim() === "" ||
-      !currentThreadId ||
-      isLoading ||
-      isThreadEnded(currentThreadId)
-    )
-      return;
+    if (!inputMessage.trim() || !currentThreadId || isLoading) return;
 
     const newMessage = { text: inputMessage, sender: "user" };
-    const updatedMessages = [...messages, newMessage];
-    setMessages(updatedMessages);
+    setMessages((prevMessages) => [...prevMessages, newMessage]);
     setInputMessage("");
     setIsLoading(true);
     setIsTyping(true);
@@ -175,169 +115,105 @@ const CustomerSupportPage = () => {
         threadId: currentThreadId,
         message: inputMessage,
       });
-
       setIsTyping(false);
-      const aiResponse = { text: response.data.response, sender: "ai" };
-      const finalMessages = [...updatedMessages, aiResponse];
-      setMessages(finalMessages);
-
-      // Update thread in localStorage
-      const updatedThreads = threads.map((thread) =>
-        thread.id === currentThreadId
-          ? { ...thread, messages: finalMessages }
-          : thread
-      );
-      setThreads(updatedThreads);
-      saveThreadsToLocalStorage(updatedThreads);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { text: response.data.response, sender: "ai" },
+      ]);
     } catch (error) {
       console.error("Error sending message:", error);
-      setIsTyping(false);
-      setMessages([
-        ...updatedMessages,
-        {
-          text: "Sorry, there was an error processing your request.",
-          sender: "ai",
-        },
-      ]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
+  // Scroll to the bottom of messages
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      <Header />
-      <main className="container mx-auto py-8 flex-grow flex">
-        {/* Sidebar */}
-        <div className="w-64 bg-white shadow-md rounded-lg mr-4 p-4 flex flex-col">
-          <button
-            onClick={createNewThread}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded flex items-center justify-center mb-4"
-          >
-            <Plus size={20} className="mr-2" />
-            New Thread
-          </button>
-          <div
-            className="space-y-2 overflow-y-auto flex-grow"
-            style={{ maxHeight: "calc(100vh - 250px)" }}
-          >
-            {threads.map((thread) => (
-              <div key={thread.id} className="flex items-center">
-                <button
-                  onClick={() => setCurrentThreadId(thread.id)}
-                  className={`flex-grow text-left p-2 rounded overflow-hidden truncate ${
-                    currentThreadId === thread.id
-                      ? "bg-blue-100 text-blue-800"
-                      : "hover:bg-gray-100"
-                  } ${thread.ended ? "opacity-50" : ""}`}
-                >
-                  {(thread.messages[0] && thread.messages[0].text) ||
-                    thread.name}
-                  {thread.ended && " (Ended)"}
-                </button>
-                <button
-                  onClick={() => deleteThread(thread.id)}
-                  className="ml-2 p-1 text-red-500 hover:bg-red-100 rounded"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Chat Area */}
-        <div
-          className="flex-grow bg-white rounded-lg shadow-md p-6 flex flex-col"
-          style={{ maxWidth: "calc(100% - 16rem)" }}
+    <Container maxWidth="md">
+      <Box mt={4}>
+        <Typography variant="h4" gutterBottom>
+          Customer Support
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<Add />}
+          onClick={createNewThread}
+          sx={{ mb: 2 }}
         >
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold">Customer Support</h1>
-            {currentThreadId && !isThreadEnded(currentThreadId) && (
-              <button
-                onClick={endSupport}
-                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
-                disabled={isLoading}
+          New Thread
+        </Button>
+        <Paper elevation={3} sx={{ p: 2, mb: 2 }}>
+          <List>
+            {threads.map((thread) => (
+              <ListItem
+                key={thread.id}
+                button
+                onClick={() => setCurrentThreadId(thread.id)}
               >
-                Finalizar atendimento
-              </button>
-            )}
-          </div>
-          <div
-            className="flex-grow overflow-y-auto mb-4 space-y-4"
-            style={{ maxHeight: "calc(100vh - 300px)" }}
-          >
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex ${
-                  message.sender === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
-                <div
-                  className={`max-w-[70%] p-3 rounded-lg ${
-                    message.sender === "user"
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-200 text-gray-800"
-                  }`}
-                >
-                  {message.text}
-                </div>
-              </div>
+                <ListItemText primary={thread.name} />
+                <ListItemSecondaryAction>
+                  <IconButton
+                    edge="end"
+                    color="error"
+                    onClick={() => deleteThread(thread.id)}
+                  >
+                    <Delete />
+                  </IconButton>
+                </ListItemSecondaryAction>
+              </ListItem>
             ))}
-            {isTyping && (
-              <div className="flex justify-start">
-                <TypingIndicator />
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-          <div className="flex">
-            <input
-              type="text"
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder={
-                isThreadEnded(currentThreadId)
-                  ? "This conversation has ended"
-                  : "Type your message here..."
-              }
-              className="flex-grow border border-gray-300 rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
-              disabled={
-                isLoading || !currentThreadId || isThreadEnded(currentThreadId)
-              }
-              ref={inputRef}
-            />
-            <button
-              onClick={handleSendMessage}
-              className="bg-blue-600 text-white px-4 py-2 rounded-r-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400"
-              disabled={
-                isLoading || !currentThreadId || isThreadEnded(currentThreadId)
-              }
+          </List>
+        </Paper>
+        <Paper elevation={3} sx={{ p: 2, height: "400px", overflowY: "auto" }}>
+          {messages.map((msg, index) => (
+            <Box
+              key={index}
+              sx={{
+                textAlign: msg.sender === "user" ? "right" : "left",
+                mb: 1,
+              }}
             >
-              {isLoading ? (
-                <div className="w-6 h-6 border-t-2 border-white border-solid rounded-full animate-spin"></div>
-              ) : (
-                <Send className="h-6 w-6" />
-              )}
-            </button>
-          </div>
-        </div>
-      </main>
-      <Footer />
-    </div>
+              <Typography
+                variant="body1"
+                sx={{
+                  display: "inline-block",
+                  p: 1,
+                  borderRadius: 1,
+                  bgcolor: msg.sender === "user" ? "primary.main" : "grey.300",
+                  color: msg.sender === "user" ? "white" : "black",
+                }}
+              >
+                {msg.text}
+              </Typography>
+            </Box>
+          ))}
+          {isTyping && <Typography variant="body2">Typing...</Typography>}
+          <div ref={messagesEndRef} />
+        </Paper>
+        <Box mt={2} display="flex">
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Type your message..."
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+          />
+          <IconButton
+            color="primary"
+            onClick={handleSendMessage}
+            disabled={isLoading}
+            sx={{ ml: 1 }}
+          >
+            {isLoading ? <CircularProgress size={24} /> : <Send />}
+          </IconButton>
+        </Box>
+      </Box>
+    </Container>
   );
 };
 

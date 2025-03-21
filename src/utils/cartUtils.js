@@ -1,6 +1,4 @@
-
-
-const CART_KEY = 'cloudmart_cart';
+const CART_KEY = "cloudmart_cart";
 
 export const getCartItems = () => {
   const cartItems = localStorage.getItem(CART_KEY);
@@ -9,12 +7,12 @@ export const getCartItems = () => {
 
 export const saveCartItems = (items) => {
   localStorage.setItem(CART_KEY, JSON.stringify(items));
-  window.dispatchEvent(new Event('cartUpdated'));
+  window.dispatchEvent(new Event("cartUpdated"));
 };
 
 export const addToCart = (product) => {
   const cartItems = getCartItems();
-  const existingItem = cartItems.find(item => item.id === product.id);
+  const existingItem = cartItems.find((item) => item.id === product.id);
   if (existingItem) {
     existingItem.quantity += 1;
   } else {
@@ -25,13 +23,13 @@ export const addToCart = (product) => {
 
 export const removeFromCart = (productId) => {
   const cartItems = getCartItems();
-  const updatedItems = cartItems.filter(item => item.id !== productId);
+  const updatedItems = cartItems.filter((item) => item.id !== productId);
   saveCartItems(updatedItems);
 };
 
 export const updateCartItemQuantity = (productId, quantity) => {
   const cartItems = getCartItems();
-  const item = cartItems.find(item => item.id === productId);
+  const item = cartItems.find((item) => item.id === productId);
   if (item) {
     item.quantity = quantity;
     saveCartItems(cartItems);

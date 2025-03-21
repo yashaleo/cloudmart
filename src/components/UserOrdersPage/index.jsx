@@ -1,8 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import Header from "../Header";
-import Footer from "../Footer";
-import LoadingSpinner from "../LoadingSpinner";
+import PropTypes from "prop-types";
+import {
+  Container,
+  Typography,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  CircularProgress,
+  IconButton,
+  Collapse,
+  Box,
+} from "@mui/material";
+import { ExpandMore, ExpandLess } from "@mui/icons-material";
 import api from "../../config/axiosConfig";
 import { getUser } from "../../utils/userUtils";
 
@@ -10,59 +23,63 @@ const OrderStatus = ({ status }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case "Pending":
-        return "bg-yellow-100 text-yellow-800";
+        return "warning.main";
       case "Processing":
-        return "bg-blue-100 text-blue-800";
+        return "info.main";
       case "Shipped":
-        return "bg-green-100 text-green-800";
+        return "success.main";
       case "Delivered":
-        return "bg-gray-100 text-gray-800";
+        return "text.secondary";
       case "Canceled":
-        return "bg-red-100 text-red-800";
+        return "error.main";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "text.secondary";
     }
   };
 
   return (
-    <span
-      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
-        status
-      )}`}
+    <Typography
+      variant="body2"
+      sx={{ color: getStatusColor(status), fontWeight: "bold" }}
     >
       {status}
-    </span>
+    </Typography>
   );
 };
 
-const OrderDetails = ({ order }) => {
-  const truncateName = (name, maxLength = 40) => {
-    if (name.length <= maxLength) return name;
-    return `${name.substring(0, maxLength)}...`;
-  };
+// ✅ Adding PropTypes for OrderStatus
+OrderStatus.propTypes = {
+  status: PropTypes.string.isRequired,
+};
 
-  return (
-    <div className="mt-4 bg-gray-50 p-4 rounded-md">
-      <h4 className="text-lg font-semibold mb-2">Order Items:</h4>
-      <ul className="list-disc list-inside">
-        {order.items.map((item, index) => (
-          <li key={index} className="mb-1">
-            <span
-              title={item.name}
-              className="inline-block max-w-md truncate align-bottom"
-            >
-              {truncateName(item.name)}
-            </span>
-            <span>
-              {" "}
-              - Quantity: {item.quantity} - ${item.price.toFixed(2)}
-            </span>
-          </li>
-        ))}
-      </ul>
-      <p className="mt-2 font-semibold">Total: ${order.total.toFixed(2)}</p>
-    </div>
-  );
+const OrderDetails = ({ order }) => (
+  <Box sx={{ mt: 2, p: 2, bgcolor: "grey.100", borderRadius: 1 }}>
+    <Typography variant="h6">Order Items:</Typography>
+    <ul>
+      {order.items.map((item, index) => (
+        <li key={index}>
+          {item.name} - Quantity: {item.quantity} - ${item.price.toFixed(2)}
+        </li>
+      ))}
+    </ul>
+    <Typography variant="subtitle1" fontWeight="bold">
+      Total: ${order.total.toFixed(2)}
+    </Typography>
+  </Box>
+);
+
+// ✅ Adding PropTypes for OrderDetails
+OrderDetails.propTypes = {
+  order: PropTypes.shape({
+    items: PropTypes.arrayOf(
+      PropTypes.shape({
+        name: PropTypes.string.isRequired,
+        quantity: PropTypes.number.isRequired,
+        price: PropTypes.number.isRequired,
+      }),
+    ).isRequired,
+    total: PropTypes.number.isRequired,
+  }).isRequired,
 };
 
 const MyOrdersPage = () => {
@@ -74,15 +91,12 @@ const MyOrdersPage = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        // Assume we have the user's email stored in localStorage
         const user = getUser();
         const response = await api.get(`/orders/user?email=${user.email}`);
-        console.log(response);
         setOrders(response.data);
-        setLoading(false);
       } catch (err) {
-        console.error("Error fetching orders:", err);
         setError("Failed to fetch orders. Please try again later.");
+      } finally {
         setLoading(false);
       }
     };
@@ -94,105 +108,65 @@ const MyOrdersPage = () => {
     setExpandedOrder(expandedOrder === orderId ? null : orderId);
   };
 
-  if (loading)
-    return (
-      <div className="min-h-screen bg-gray-100 flex flex-col">
-        <Header />
-        <main className="container mx-auto py-8 flex-grow">
-          <LoadingSpinner />
-        </main>
-        <Footer />
-      </div>
-    );
-
-  if (error)
-    return (
-      <div className="min-h-screen bg-gray-100 flex flex-col">
-        <Header />
-        <main className="container mx-auto py-8 flex-grow">
-          <p className="text-red-500 text-center">{error}</p>
-        </main>
-        <Footer />
-      </div>
-    );
-
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      <Header />
-      <main className="container mx-auto py-8 flex-grow">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">My Orders</h1>
-        </div>
-        {orders.length === 0 ? (
-          <p className="text-gray-600">You haven't placed any orders yet.</p>
-        ) : (
-          <div className="bg-white shadow-md rounded-lg overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Order ID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {orders.map((order) => (
-                  <React.Fragment key={order.id}>
-                    <tr>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        #{order.id}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(order.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <OrderStatus status={order.status} />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        ${order.total.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => toggleOrderDetails(order.id)}
-                          className="text-indigo-600 hover:text-indigo-900"
-                        >
-                          {expandedOrder === order.id ? (
-                            <ChevronUp className="inline" />
-                          ) : (
-                            <ChevronDown className="inline" />
-                          )}
-                          <span className="ml-1">Details</span>
-                        </button>
-                      </td>
-                    </tr>
-                    {expandedOrder === order.id && (
-                      <tr>
-                        <td colSpan="5">
-                          <OrderDetails order={order} />
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </main>
-      <Footer />
-    </div>
+    <Container maxWidth="md">
+      <Typography variant="h4" gutterBottom>
+        My Orders
+      </Typography>
+      {loading ? (
+        <CircularProgress />
+      ) : error ? (
+        <Typography color="error">{error}</Typography>
+      ) : orders.length === 0 ? (
+        <Typography>No orders found.</Typography>
+      ) : (
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Order ID</TableCell>
+                <TableCell>Date</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Total</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {orders.map((order) => (
+                <React.Fragment key={order.id}>
+                  <TableRow>
+                    <TableCell>#{order.id}</TableCell>
+                    <TableCell>
+                      {new Date(order.createdAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <OrderStatus status={order.status} />
+                    </TableCell>
+                    <TableCell>${order.total.toFixed(2)}</TableCell>
+                    <TableCell>
+                      <IconButton onClick={() => toggleOrderDetails(order.id)}>
+                        {expandedOrder === order.id ? (
+                          <ExpandLess />
+                        ) : (
+                          <ExpandMore />
+                        )}
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell colSpan={5}>
+                      <Collapse in={expandedOrder === order.id}>
+                        <OrderDetails order={order} />
+                      </Collapse>
+                    </TableCell>
+                  </TableRow>
+                </React.Fragment>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+    </Container>
   );
 };
 

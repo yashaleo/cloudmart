@@ -1,30 +1,88 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React from "react";
+import { Box, Container, Typography, Grid } from "@mui/material";
+import { Link } from "react-router-dom"; // Import from react-router-dom
 
-const Footer = () => (
-  <footer className="bg-gray-800 text-white py-4">
-    <div className="container mx-auto px-4">
-      <div className="flex flex-wrap justify-between items-center">
-        <div className="w-full sm:w-auto mb-4 sm:mb-0">
-          <h3 className="text-xl font-bold">CloudMart</h3>
-          <p className="text-sm text-gray-400">Your AI-powered shopping destination</p>
-        </div>
-        <div className="w-full sm:w-auto">
-          <ul className="flex flex-wrap justify-center sm:justify-end space-x-4">
-            <li><Link to="/" className="hover:text-blue-300 text-sm">Home</Link></li>
-            <li><Link to="/cart" className="hover:text-blue-300 text-sm">Cart</Link></li>
-            <li><Link to="/my-orders" className="hover:text-blue-300 text-sm">My Orders</Link></li>
+const Footer = () => {
+  return (
+    <Box
+      component="footer"
+      sx={{
+        backgroundColor: "#121212",
+        color: "#ffffff",
+        py: 4,
+        mt: 4,
+        borderTop: "1px solid #333",
+      }}
+    >
+      <Container maxWidth="lg">
+        <Grid container spacing={3} justifyContent="space-between">
+          {/* Branding Section */}
+          <Grid item xs={12} md={4}>
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: "bold", color: "#FFD700" }} // Gold-ish for contrast
+            >
+              CloudMart
+            </Typography>
+            <Typography variant="body2" color="gray">
+              Your AI-powered shopping destination
+            </Typography>
+          </Grid>
 
-            <li><Link to="/about" className="hover:text-blue-300 text-sm">About</Link></li>
-            <li><Link to="/customer-support" className="hover:text-blue-300 text-sm">Support</Link></li>
-          </ul>
-        </div>
-      </div>
-      <div className="mt-4 pt-4 border-t border-gray-700 text-center text-sm text-gray-400">
-        <p>&copy; 2024 CloudMart. All rights reserved.</p>
-      </div>
-    </div>
-  </footer>
-);
+          {/* Navigation Links */}
+          <Grid
+            item
+            xs={12}
+            md={4}
+            sx={{ textAlign: { xs: "center", md: "right" } }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: { xs: "center", md: "flex-end" },
+                gap: 2,
+              }}
+            >
+              <Link to="/" style={{ color: "inherit", textDecoration: "none" }}>
+                Home
+              </Link>
+              <Link
+                to="/cart"
+                style={{ color: "inherit", textDecoration: "none" }}
+              >
+                Cart
+              </Link>
+              <Link
+                to="/my-orders"
+                style={{ color: "inherit", textDecoration: "none" }}
+              >
+                My Orders
+              </Link>
+              <Link
+                to="/about"
+                style={{ color: "inherit", textDecoration: "none" }}
+              >
+                About
+              </Link>
+              <Link
+                to="/customer-support"
+                style={{ color: "inherit", textDecoration: "none" }}
+              >
+                Support
+              </Link>
+            </Box>
+          </Grid>
+        </Grid>
+
+        {/* Copyright */}
+        <Box mt={3} textAlign="center">
+          <Typography variant="body2" color="gray">
+            © {new Date().getFullYear()} CloudMart. All rights reserved.
+          </Typography>
+        </Box>
+      </Container>
+    </Box>
+  );
+};
 
 export default Footer;
