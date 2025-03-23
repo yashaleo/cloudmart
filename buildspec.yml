@@ -11,6 +11,13 @@ phases:
       - aws --version
       - export REPOSITORY_URI=$ECR_REPO
       - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin $REPOSITORY_URI
+      - echo "Retrieving DockerHub credentials from AWS Secrets Manager..."
+      - export DOCKER_USERNAME=$(aws secretsmanager get-secret-value --secret-id dockerhub-credentials --query 'SecretString' --output text | jq -r .username)
+      - export DOCKER_PASSWORD=$(aws secretsmanager get-secret-value --secret-id dockerhub-credentials --query 'SecretString' --output text | jq -r .password)
+      - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+      - echo "DockerHub login successful!"
+      - echo "Pulling base image to avoid rate limits..."
+      - docker pull node:18-alpine
 
   build:
     commands:
