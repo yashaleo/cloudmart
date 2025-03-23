@@ -85,18 +85,22 @@ const AIAssistant = () => {
         conversationId,
         message: inputMessage,
       });
+
       setIsTyping(false);
+
+      // Try extracting the Bedrock response
       const aiResponseText =
-        response.data.response?.options?.output ||
-        response.data.response ||
+        response?.data?.message || // if your backend sends a `message` field
+        response?.data?.completion?.output || // fallback in case it's using completion
         "Sorry, I couldn't process that response.";
+
       setMessages((prev) => [...prev, { text: aiResponseText, sender: "ai" }]);
     } catch (error) {
       console.error("Error sending message:", error);
       setIsTyping(false);
       setMessages((prev) => [
         ...prev,
-        { text: "Error processing request.", sender: "ai" },
+        { text: "Ugh, tech tantrum! 😤 Something went wrong.", sender: "ai" },
       ]);
     } finally {
       setIsLoading(false);
