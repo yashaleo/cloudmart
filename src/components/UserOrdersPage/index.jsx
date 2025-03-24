@@ -53,8 +53,20 @@ OrderStatus.propTypes = {
 };
 
 const OrderDetails = ({ order }) => (
-  <Box sx={{ mt: 2, p: 2, bgcolor: "grey.100", borderRadius: 1 }}>
-    <Typography variant="h6">Order Items:</Typography>
+  <Paper
+    elevation={3}
+    sx={{
+      mt: 2,
+      p: 3,
+      borderRadius: 2,
+      bgcolor: "rgba(255, 255, 255, 0.6)", // semi-transparent background
+      backdropFilter: "blur(6px)", // subtle glass effect
+      color: "#0A1929", // dark blue for better contrast
+    }}
+  >
+    <Typography variant="h6" gutterBottom>
+      Order Items:
+    </Typography>
     <ul>
       {order.items.map((item, index) => (
         <li key={index}>
@@ -62,10 +74,10 @@ const OrderDetails = ({ order }) => (
         </li>
       ))}
     </ul>
-    <Typography variant="subtitle1" fontWeight="bold">
+    <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 2 }}>
       Total: ${order.total.toFixed(2)}
     </Typography>
-  </Box>
+  </Paper>
 );
 
 // ✅ Adding PropTypes for OrderDetails
