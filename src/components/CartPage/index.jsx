@@ -235,6 +235,19 @@ const CartPage = () => {
                 onUpdateQuantity={handleUpdateQuantity}
               />
             ))}
+            <div className="mt-6 text-right">
+              <p className="text-xl font-semibold">
+                Total: ${totalPrice.toFixed(2)}
+              </p>
+              {error && <p className="text-red-500 mt-2">{error}</p>}
+              <button
+                className="mt-4 bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors disabled:bg-gray-400"
+                onClick={() => setIsConfirmationOpen(true)}
+                disabled={loading}
+              >
+                Place Order
+              </button>
+            </div>
           </div>
         )}
       </div>
