@@ -1,17 +1,23 @@
 import React from "react";
-import { Box, Container, Typography, Grid } from "@mui/material";
-import { Link } from "react-router-dom"; // Import from react-router-dom
+import {
+  Box,
+  Container,
+  Typography,
+  Grid,
+  Link as MuiLink,
+} from "@mui/material";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
     <Box
       component="footer"
       sx={{
-        backgroundColor: "#121212",
-        color: "#ffffff",
+        backgroundColor: "#0A1929",
+        color: "#E0F7FA",
         py: 4,
         mt: 4,
-        borderTop: "1px solid #333",
+        borderTop: "2px solid #003b5c",
       }}
     >
       <Container maxWidth="lg">
@@ -20,11 +26,11 @@ const Footer = () => {
           <Grid item xs={12} md={4}>
             <Typography
               variant="h6"
-              sx={{ fontWeight: "bold", color: "#FFD700" }} // Gold-ish for contrast
+              sx={{ fontWeight: "bold", color: "#00E5FF" }}
             >
               CloudMart
             </Typography>
-            <Typography variant="body2" color="gray">
+            <Typography variant="body2" color="#90CAF9">
               Your AI-powered shopping destination
             </Typography>
           </Grid>
@@ -41,42 +47,33 @@ const Footer = () => {
                 display: "flex",
                 justifyContent: { xs: "center", md: "flex-end" },
                 gap: 2,
+                flexWrap: "wrap",
               }}
             >
-              <Link to="/" style={{ color: "inherit", textDecoration: "none" }}>
-                Home
-              </Link>
-              <Link
-                to="/cart"
-                style={{ color: "inherit", textDecoration: "none" }}
-              >
-                Cart
-              </Link>
-              <Link
-                to="/my-orders"
-                style={{ color: "inherit", textDecoration: "none" }}
-              >
-                My Orders
-              </Link>
-              <Link
-                to="/about"
-                style={{ color: "inherit", textDecoration: "none" }}
-              >
-                About
-              </Link>
-              <Link
-                to="/customer-support"
-                style={{ color: "inherit", textDecoration: "none" }}
-              >
-                Support
-              </Link>
+              {[
+                { to: "/", label: "Home" },
+                { to: "/cart", label: "Cart" },
+                { to: "/my-orders", label: "My Orders" },
+                { to: "/about", label: "About" },
+                { to: "/customer-support", label: "Support" },
+              ].map((link) => (
+                <MuiLink
+                  key={link.to}
+                  component={Link}
+                  to={link.to}
+                  underline="hover"
+                  sx={{ color: "#E0F7FA", fontWeight: 500 }}
+                >
+                  {link.label}
+                </MuiLink>
+              ))}
             </Box>
           </Grid>
         </Grid>
 
         {/* Copyright */}
         <Box mt={3} textAlign="center">
-          <Typography variant="body2" color="gray">
+          <Typography variant="body2" color="#90CAF9">
             © {new Date().getFullYear()} CloudMart. All rights reserved.
           </Typography>
         </Box>

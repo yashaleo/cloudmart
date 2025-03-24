@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Send, Add, Delete } from "@mui/icons-material";
 import {
   Container,
   Box,
@@ -13,7 +12,9 @@ import {
   ListItem,
   ListItemText,
   ListItemSecondaryAction,
+  Divider,
 } from "@mui/material";
+import { Send, Add, Delete } from "@mui/icons-material";
 import api from "../../config/axiosConfig";
 
 const CustomerSupportPage = () => {
@@ -33,15 +34,14 @@ const CustomerSupportPage = () => {
     if (currentThreadId) {
       loadMessagesForThread(currentThreadId);
     } else {
-      setMessages([]); // Clear messages when no thread is selected
+      setMessages([]);
     }
   }, [currentThreadId]);
 
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
-  // Load threads from local storage
   const loadThreadsFromLocalStorage = () => {
     try {
       const savedThreads =
@@ -52,22 +52,20 @@ const CustomerSupportPage = () => {
       }
     } catch (error) {
       console.error("Error loading threads from storage:", error);
-      localStorage.removeItem("supportThreads"); // Remove corrupt data
+      localStorage.removeItem("supportThreads");
     }
   };
 
-  // Fetch messages for a given thread
   const loadMessagesForThread = async (threadId) => {
     try {
       const response = await api.get(`/ai/messages?threadId=${threadId}`);
       setMessages(response.data.messages || []);
     } catch (error) {
       console.error("Error loading messages:", error);
-      setMessages([]); // Fallback to empty messages
+      setMessages([]);
     }
   };
 
-  // Create a new thread
   const createNewThread = async () => {
     try {
       const response = await api.post("/ai/start");
@@ -85,27 +83,22 @@ const CustomerSupportPage = () => {
     }
   };
 
-  // Delete a thread
   const deleteThread = (threadId) => {
     const updatedThreads = threads.filter((thread) => thread.id !== threadId);
     setThreads(updatedThreads);
     localStorage.setItem("supportThreads", JSON.stringify(updatedThreads));
 
-    // Reset current thread if the deleted thread was active
     if (currentThreadId === threadId) {
-      setCurrentThreadId(
-        updatedThreads.length > 0 ? updatedThreads[0].id : null,
-      );
+      setCurrentThreadId(updatedThreads[0]?.id || null);
       setMessages([]);
     }
   };
 
-  // Handle sending a message
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || !currentThreadId || isLoading) return;
 
     const newMessage = { text: inputMessage, sender: "user" };
-    setMessages((prevMessages) => [...prevMessages, newMessage]);
+    setMessages((prev) => [...prev, newMessage]);
     setInputMessage("");
     setIsLoading(true);
     setIsTyping(true);
@@ -115,102 +108,128 @@ const CustomerSupportPage = () => {
         threadId: currentThreadId,
         message: inputMessage,
       });
-      setIsTyping(false);
-      setMessages((prevMessages) => [
-        ...prevMessages,
+      setMessages((prev) => [
+        ...prev,
         { text: response.data.response, sender: "ai" },
       ]);
     } catch (error) {
       console.error("Error sending message:", error);
     } finally {
+      setIsTyping(false);
       setIsLoading(false);
     }
   };
 
-  // Scroll to the bottom of messages
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
   return (
-    <Container maxWidth="md">
-      <Box mt={4}>
-        <Typography variant="h4" gutterBottom>
-          Customer Support
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={createNewThread}
-          sx={{ mb: 2 }}
-        >
-          New Thread
-        </Button>
-        <Paper elevation={3} sx={{ p: 2, mb: 2 }}>
-          <List>
-            {threads.map((thread) => (
-              <ListItem
-                key={thread.id}
-                button
-                onClick={() => setCurrentThreadId(thread.id)}
-              >
-                <ListItemText primary={thread.name} />
-                <ListItemSecondaryAction>
-                  <IconButton
-                    edge="end"
-                    color="error"
-                    onClick={() => deleteThread(thread.id)}
-                  >
-                    <Delete />
-                  </IconButton>
-                </ListItemSecondaryAction>
-              </ListItem>
-            ))}
-          </List>
-        </Paper>
-        <Paper elevation={3} sx={{ p: 2, height: "400px", overflowY: "auto" }}>
-          {messages.map((msg, index) => (
-            <Box
-              key={index}
-              sx={{
-                textAlign: msg.sender === "user" ? "right" : "left",
-                mb: 1,
-              }}
-            >
-              <Typography
-                variant="body1"
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Typography variant="h4" gutterBottom>
+        Customer Support
+      </Typography>
+      <Box sx={{ display: "flex", gap: 3 }}>
+        {/* Sidebar - Thread List */}
+        <Box width="25%">
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            fullWidth
+            onClick={createNewThread}
+            sx={{ mb: 2 }}
+          >
+            New Thread
+          </Button>
+          <Paper elevation={2}>
+            <List dense>
+              {threads.map((thread) => (
+                <ListItem
+                  key={thread.id}
+                  button
+                  selected={thread.id === currentThreadId}
+                  onClick={() => setCurrentThreadId(thread.id)}
+                  divider
+                >
+                  <ListItemText
+                    primary={thread.name}
+                    primaryTypographyProps={{ noWrap: true }}
+                  />
+                  <ListItemSecondaryAction>
+                    <IconButton
+                      edge="end"
+                      size="small"
+                      onClick={() => deleteThread(thread.id)}
+                    >
+                      <Delete fontSize="small" color="error" />
+                    </IconButton>
+                  </ListItemSecondaryAction>
+                </ListItem>
+              ))}
+            </List>
+          </Paper>
+        </Box>
+
+        {/* Chat Area */}
+        <Box width="75%" display="flex" flexDirection="column">
+          <Paper
+            elevation={2}
+            sx={{
+              p: 2,
+              flexGrow: 1,
+              minHeight: "400px",
+              overflowY: "auto",
+              mb: 2,
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            {messages.map((msg, index) => (
+              <Box
+                key={index}
                 sx={{
-                  display: "inline-block",
-                  p: 1,
-                  borderRadius: 1,
-                  bgcolor: msg.sender === "user" ? "primary.main" : "grey.300",
-                  color: msg.sender === "user" ? "white" : "black",
+                  textAlign: msg.sender === "user" ? "right" : "left",
+                  mb: 1,
                 }}
               >
-                {msg.text}
+                <Typography
+                  sx={{
+                    display: "inline-block",
+                    px: 2,
+                    py: 1,
+                    borderRadius: 2,
+                    bgcolor:
+                      msg.sender === "user" ? "primary.main" : "grey.300",
+                    color: msg.sender === "user" ? "white" : "black",
+                  }}
+                >
+                  {msg.text}
+                </Typography>
+              </Box>
+            ))}
+            {isTyping && (
+              <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                Typing...
               </Typography>
-            </Box>
-          ))}
-          {isTyping && <Typography variant="body2">Typing...</Typography>}
-          <div ref={messagesEndRef} />
-        </Paper>
-        <Box mt={2} display="flex">
-          <TextField
-            fullWidth
-            variant="outlined"
-            placeholder="Type your message..."
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-          />
-          <IconButton
-            color="primary"
-            onClick={handleSendMessage}
-            disabled={isLoading}
-            sx={{ ml: 1 }}
-          >
-            {isLoading ? <CircularProgress size={24} /> : <Send />}
-          </IconButton>
+            )}
+            <div ref={messagesEndRef} />
+          </Paper>
+
+          {/* Message Input */}
+          <Box display="flex">
+            <TextField
+              fullWidth
+              placeholder="Type your message..."
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+              disabled={!currentThreadId || isLoading}
+            />
+            <IconButton
+              onClick={handleSendMessage}
+              disabled={!currentThreadId || isLoading}
+              sx={{ ml: 1 }}
+              color="primary"
+            >
+              {isLoading ? <CircularProgress size={24} /> : <Send />}
+            </IconButton>
+          </Box>
         </Box>
       </Box>
     </Container>
